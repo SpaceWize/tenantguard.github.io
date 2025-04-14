@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TenantGuard</title>
+    <link rel="icon" href="icon.png" type="image/x-icon" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+            color: #333;
+        }
+
+        header {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin: 0;
+        }
+
+        #theme-toggle {
+            padding: 5px 10px;
+            cursor: pointer;
+            background-color: #f44336;
+            color: rgb(0, 0, 0);
+            border: none;
+            border-radius: 4px;
+        }
+
+        #theme-toggle:hover {
+            background-color: #e53935;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .checklist-item {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .checklist-item label {
+            margin-left: 10px;
+            font-size: 16px;
+        }
+
+        .checklist-item input {
+            margin-right: 10px;
+        }
+
+        .buttons {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .submit-btn {
+            background-color: #f44336;
+            color: rgb(0, 0, 0);
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .submit-btn:hover {
+            background-color: #e53935;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 600px;
+            width: 80%;
+        }
+
+        .modal-content h2 {
+            text-align: center;
+            margin-top: 0;
+        }
+
+        .modal-content h3 {
+            margin-top: 20px;
+        }
+
+        .modal-content ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .modal-content li {
+            margin-bottom: 10px;
+        }
+
+        #Ok-modal {
+            display: block;
+            margin: 20px auto 0;
+            padding: 10px 20px;
+            background-color: #f44336;
+            color: rgb(0, 0, 0);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        #Ok-modal:hover {
+            background-color: #e53935;
+        }
+
+        /* Dark Mode Styles */
+        body.dark-mode {
+            background-color: #121212;
+            color: white;
+        }
+
+        .dark-mode header {
+            background-color: #003366;
+        }
+
+        .dark-mode .container {
+            background-color: #1e1e1e;
+        }
+
+        .dark-mode .modal-content {
+            background-color: #1e1e1e;
+        }
+
+        .dark-mode .checklist-item label {
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>TenantGuard</h1>
+            <button id="theme-toggle">Toggle Theme</button>
+        </div>
+    </header>
+    <div class="container">
+        <div id="checklist" class="checklist"></div>
+        <div class="buttons">
+            <button class="submit-btn" id="submit-btn">Submit</button>
+        </div>
+    </div>
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <h2>Selected Concerns</h2>
+            <div id="concerns-display"></div>
+            <button id="Ok-modal">Ok</button>
+        </div>
+    </div>
+
+    <script>
+        // Full list of concerns
+        const concerns = [
+            // Neighbors
+            {
+                'description': 'Neighboring tenant smokes, causing second-hand smoke in the unit',
+                'severity': 2
+            },
+            {
+                'description': 'Neighboring tenant engages in threatening behavior',
+                'severity': 3
+            },
+            // Rent
+            {
+                'description': 'Unjustified rent increase beyond legal limit',
+                'severity': 2
+            },
+            {
+                'description': 'Rent increase does not follow legal guidelines',
+                'severity': 2
+            },
+            {'description': 'Rent increase follows legal guidelines', 'severity': 0},
+            {'description': 'Security deposit not returned', 'severity': 2},
+            // Tenancy
+            {
+                'description': 'Eviction without written notice or legal reason',
+                'severity': 3
+            },
+            {
+                'description': 'Eviction with written notice but no legal reason',
+                'severity': 2
+            },
+            {
+                'description': 'Eviction with written notice and legal reason',
+                'severity': 0
+            },
+            {
+                'description': 'Landlord refuses to renew a lease without cause',
+                'severity': 2
+            },
+            {
+                'description': 'Landlord fails to provide a written tenancy agreement',
+                'severity': 1
+            },
+            {'description': 'Unclear or confusing lease terms', 'severity': 0},
+            {
+                'description': 'Landlord attempts to evict for renovations but doesn’t follow proper process',
+                'severity': 3
+            },
+            // Other
+            {
+                'description': 'Building experiences frequent break-ins or security issues',
+                'severity': 2
+            },
+            {
+                'description': 'Property is subject to frequent power outages',
+                'severity': 2
+            },
+            {
+                'description': 'Utility company cuts off services due to billing disputes',
+                'severity': 3
+            },
+            // Landlords/Management
+            // Entry and Privacy Issues
+            {'description': 'Landlord enters with 24-hour notice', 'severity': 0},
+            {
+                'description': 'Landlord enters without 24-hour notice but with permission',
+                'severity': 0
+            },
+            {
+                'description': 'Landlord enters without any notice or permission',
+                'severity': 3
+            },
+            {
+                'description': 'Landlord fails to provide proper notice for entry during emergencies',
+                'severity': 2
+            },
+            {'description': 'Landlord installs cameras inside the unit', 'severity': 3},
+            // Harassment, Discrimination, and Retaliation
+            {'description': 'Landlord harassing or intimidating tenant', 'severity': 3},
+            {
+                'description': 'Landlord discriminates based on protected characteristics (e.g., race, gender, family status)',
+                'severity': 3
+            },
+            {
+                'description': 'Landlord retaliates after tenant files a complaint',
+                'severity': 3
+            },
+            {'description': 'Landlord unjustly calls police', 'severity': 3},
+            {
+                'description': 'Landlord falsely accuses or fabricates tenant of illegal or dangerous behavior',
+                'severity': 3
+            },
+            // Repairs and Maintenance
+            {
+                'description': 'Landlord delays non-emergency repairs for months',
+                'severity': 1
+            },
+            {'description': 'Landlord fails to maintain common areas', 'severity': 1},
+            {'description': 'Minor maintenance delays', 'severity': 0},
+            {'description': 'Repairs affecting health or safety', 'severity': 2},
+            {
+                'description': 'Landlord fails to address pest infestations',
+                'severity': 3
+            },
+            {'description': 'No heat during winter months', 'severity': 3},
+            {'description': 'Severe health hazards', 'severity': 3},
+            // Health and Safety Violations
+            {
+                'description': 'Landlord puts out a chemical use notice with a less than 24-hour notice',
+                'severity': 3
+            },
+            {
+                'description': 'Landlord puts out a chemical use notice with a less than 48-hour notice',
+                'severity': 2
+            },
+            {
+                'description': 'Landlord puts out a chemical use notice with a less than 1 week notice',
+                'severity': 2
+            },
+            {'description': 'Landlord cuts off essential services', 'severity': 3},
+            // Legal and Financial Violations
+            {
+                'description': 'Landlord charges illegal fees (e.g., application or guest fees)',
+                'severity': 2
+            },
+            {'description': 'Landlord changes locks without any notice', 'severity': 3},
+            {
+                'description': 'Landlord changes locks with only 24-hour notice',
+                'severity': 3
+            },
+            {
+                'description': 'Landlord changes locks with only 1 week notice',
+                'severity': 2
+            },
+            {
+                'description': 'Landlord changes locks with only 2 week notice',
+                'severity': 2
+            },
+            {
+                'description': 'Landlord denies accommodations for disabilities',
+                'severity': 3
+            },
+            {'description': 'Landlord requires guests to check in', 'severity': 2},
+            {
+                'description': 'Landlord makes yearly visiting maximum (e.g., 14-days a year)',
+                'severity': 3
+            },
+            // Property Ownership Issues
+            {
+                'description': 'Landlord sells the property without informing tenant of new owner',
+                'severity': 2
+            },
+            // Management-Specific Issues
+            {
+                'description': 'Property management company withholds tenant’s mail or packages',
+                'severity': 2
+            }
+        ];
+
+        // Populate the checklist
+        const checklist = document.getElementById('checklist');
+        concerns.forEach((concern, index) => {
+            const div = document.createElement('div');
+            div.className = 'checklist-item';
+            div.innerHTML = `
+                <input type="checkbox" id="concern-${index}">
+                <label for="concern-${index}">${concern.description}</label>
+            `;
+            checklist.appendChild(div);
+        });
+
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+        });
+
+        // Map severity to message
+        function getMessage(severity) {
+            if (severity === 0 || severity === 1) {
+                return "Lawyer not needed";
+            } else if (severity === 2) {
+                return "Lawyer may be needed";
+            } else if (severity === 3) {
+                return "Lawyer highly recommended";
+            }
+        }
+
+        // Submit button functionality
+        const submitButton = document.getElementById('submit-btn');
+        submitButton.addEventListener('click', () => {
+            const checkedBoxes = document.querySelectorAll('.checklist-item input:checked');
+            const concernsDisplay = document.getElementById('concerns-display');
+            concernsDisplay.innerHTML = '';
+
+            if (checkedBoxes.length === 0) {
+                concernsDisplay.innerHTML = '<p>No concerns selected.</p>';
+            } else {
+                const groups = {
+                    "Lawyer not needed": [],
+                    "Lawyer may be needed": [],
+                    "Lawyer highly recommended": []
+                };
+
+                checkedBoxes.forEach(checkbox => {
+                    const index = checkbox.id.split('-')[1];
+                    const concern = concerns[index];
+                    const message = getMessage(concern.severity);
+                    groups[message].push(concern.description);
+                });
+
+                let html = '';
+                for (const message in groups) {
+                    if (groups[message].length > 0) {
+                        html += `<h3>${message}</h3><ul>`;
+                        groups[message].forEach(concern => {
+                            html += `<li>${concern}</li>`;
+                        });
+                        html += `</ul>`;
+                    }
+                }
+                concernsDisplay.innerHTML = html;
+            }
+
+            document.getElementById('modal').style.display = 'flex';
+        });
+
+        // Ok modal and reset checklist
+        const OkModalButton = document.getElementById('Ok-modal');
+        OkModalButton.addEventListener('click', () => {
+            document.getElementById('modal').style.display = 'none';
+            document.querySelectorAll('.checklist-item input').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+        });
+    </script>
+</body>
+</html>
